@@ -1,1 +1,2 @@
 nagios-audit
+gunicorn==19.6
