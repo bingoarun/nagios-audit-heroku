@@ -33,13 +33,25 @@ def upload():
             return redirect(request.url)
         if file:
             tmp_filename = file.filename + timestr
+            actual_filename = file.filename.split(".")[0]
             file.save(os.path.join(application.config['UPLOAD_FOLDER'], tmp_filename))
-            cmd_str = ("nagios-audit --input_file=%s%s --output_file=%s%s" % (UPLOAD_FOLDER,tmp_filename,OUTPUT_FOLDER,tmp_filename))
+            mypath = UPLOAD_FOLDER+actual_filename+timestr
+            if not os.path.isdir(mypath):
+               os.makedirs(mypath)
+            extract_cmd = ("tar -xvzf %s%s -C %s" % (UPLOAD_FOLDER,tmp_filename,mypath))
+            os.system(extract_cmd)
+            cmd_str = ("nagios-audit --input_file=%s%s --output_file=%s/%s" % (mypath,"/status.dat",mypath,actual_filename))
             print cmd_str
             os.system(cmd_str)
-            output_str = open((OUTPUT_FOLDER+tmp_filename)).read()
+            output_str = open((mypath+"/"+actual_filename)).read()
             response = make_response(output_str)
-            response.headers["Content-Disposition"] = "attachment; filename=test.csv"
+            response.headers["Content-Disposition"] = "attachment; filename=Audit_report.csv"
+            os.remove((mypath+"/"+actual_filename))
+            os.remove((mypath+"/status.dat"))
+            os.rmdir(mypath)
+            os.remove((UPLOAD_FOLDER+tmp_filename))
+
+
             return response
             #return redirect(url_for('result',filename=(UPLOAD_FOLDER+tmp_filename)))
             #return render_template("result.html",filename=(OUTPUT_FOLDER+tmp_filename))
